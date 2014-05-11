@@ -1,4 +1,8 @@
 function convertGradientToSvg( gradient ) {
+    
+    if (!gradient) {
+        return false;
+    };
 
     /*!
      * CSS2SVG 1.5.4 -- August 14, 2013
@@ -7,10 +11,6 @@ function convertGradientToSvg( gradient ) {
      * Licensed Under Creative Commons Attribution-Sharealike 3.0 -- creativecommons.org/licenses/by-sa/3.0/
      * Permission hereby granted to use or modify in any way you see fit, as long as this notice stays intact.
      */
-
-    if (!gradient) {
-        return false;
-    };
 
 
     // AM: Encoded address, originally generated at rumkin.com/tools/mailto_encoder/custom.php -- substantially modded. For script reuse, delete or replace with a function you generate at the source URL.
@@ -54,7 +54,6 @@ function convertGradientToSvg( gradient ) {
         colorArr = [],
         stopArr, stl,
         units, prev, prevW, bl, oldWebkit, error, bgSize, bgSizeStr, toFromFix, hex, downWarnDiv,
-        cocheck = "Check your gradient direction and/or color values.",
         trans = /rgba|hsla|transparent/,
         bgSt = /background-size:[^;}]+/i;
 
@@ -69,16 +68,13 @@ function convertGradientToSvg( gradient ) {
     function splitGradient(string) {
         bgsUriOut = dir = error = uri = ''; // AM: These must get reset upon each iteration of the css loop above
         if (string.match(/radial/)) {
-            error = "The script currently supports only LINEAR gradients.";
             return !1;
         }
         else if (string.match(/\d(r?em|ex|ch|vh|vm|vmin|vmax)/)) {
-            error = 'Font- or viewport-relative units are not supported. Valid units are "%", "px", "cm", "mm", "in", "pt", and "pc".';
             return !1;
         }
         // AM: Check for incorrect hex colors here since they may escape the color check below and affect rendering, cause the script to trip, or other weird stuff.
         else if (string.match(/#([\da-f]{4,5}|[\da-f]{1,2})\W/)) {
-            error = cocheck;
             return !1;
         }
         if (string.match(bgSt)) {
@@ -175,7 +171,6 @@ function convertGradientToSvg( gradient ) {
                 if (d.style.color) {
                     d.style.cssText = 'color:' + colorArr[col];
                     if (!d.style.color) {
-                        error = cocheck;
                         return !1;
                     }
                 }
@@ -264,7 +259,6 @@ function convertGradientToSvg( gradient ) {
                 y2 = c, tx2 = w, ty2 = h;
             }
             else {
-                error = "Check your direction value(s). Valid keywords are 'top', 'right', 'bottom', and 'left'.";
                 return !1;
             }
             buildSvg(bl);
@@ -651,66 +645,36 @@ function convertGradientToSvg( gradient ) {
 
 };
 
-// console.time implementation for IE
-if(window.console && typeof(window.console.time) == "undefined") {
-    console.time = function(name, reset){
-        if(!name) { return; }
-        var time = new Date().getTime();
-        if(!console.timeCounters) { console.timeCounters = {}; }
-        var key = "KEY" + name.toString();
-        if(!reset && console.timeCounters[key]) { return; }
-            console.timeCounters[key] = time;
-        };
+function loopStylesheet ( stylesheet, prop ) {
 
-    console.timeEnd = function(name){
-        var time = new Date().getTime();
-        if(!console.timeCounters) { return; }
-        var key = "KEY" + name.toString();
-        var timeCounter = console.timeCounters[key];
-        var diff;
-        if(timeCounter) {
-            diff = time - timeCounter;
-            var label = name + ": " + diff + "ms";
-            console.info(label);
-            delete console.timeCounters[key];
+    var rules = stylesheet.cssRules,
+        rulesLength = rules.length,
+        element;
+
+    // http://jsperf.com/fastest-array-loops-in-javascript/183
+    for ( var i = 0, l = rulesLength; i !== l; i++ ) {
+
+        element = rules[i];
+
+        if ( !element.media && element.style && element.style[prop] ) {
+
+            element.style.backgroundImage = convertGradientToSvg(element.style[prop]);
+
         }
-        return diff;
-    };
+
+    }
+
 };
-
- function loopStylesheet ( stylesheet, prop ) {
-
- 	var rules = stylesheet.cssRules,
-     	rulesLength = rules.length,
-     	element;
-
-     	// http://jsperf.com/fastest-array-loops-in-javascript/183
-		for ( var i = 0, l = rulesLength; i !== l; i++ ) {
-
-     		element = rules[i];
-
-	         if ( !element.media && element.style && element.style[prop] ) {
-
-	            element.style.backgroundImage = convertGradientToSvg(element.style[prop]);
-	         }
-
-     	}
-
- };
 
 function modifyCss ( prop ) {
 
-	console.time('processing time');
-
-	var property =  '-pie-background',
-    	stylesheet = document.styleSheets;
+    var property =  '-pie-background',
+        stylesheet = document.styleSheets;
 
     // http://jsperf.com/fastest-array-loops-in-javascript/183
-	for ( var i = 0, l = stylesheet.length; i !== l; i++ ) {
+    for ( var i = 0, l = stylesheet.length; i !== l; i++ ) {
         loopStylesheet( stylesheet[i], property );
     }
-
-    console.timeEnd('processing time');
 
 };
 
