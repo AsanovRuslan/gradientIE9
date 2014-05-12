@@ -207,14 +207,9 @@ function convertGradientToSvg( gradient ) {
             finishSVG(svg, uri, bgs.length);
         }
         else {
-            if (b.checked) {
-                bUriOut += sel + 'background:' + bgsUriOut + '}\n\n';
-                bUriOut = bUriOut.replace(/,\n}/g, '}');
-            }
             bgsUriOut = bgsUriOut.replace(/,\n$|,$/g, '');
             uCode = bgsUriOut;
             out.readOnly = 1;
-            out.value = 'Output display, editing, and updating is unavailable while using "background-size" in your input. To make changes, edit your original input and convert again.';
         }
     }
 
@@ -310,6 +305,7 @@ function convertGradientToSvg( gradient ) {
         x1 = Math.round(tx2 / w * mx) / c, y1 = Math.round(ty2 / h * mx) / c,
         x2 = Math.round(tx1 / w * mx) / c, y2 = Math.round(ty1 / h * mx) / c,
         buildSvg(bl);
+
     }
 
     function buildSvg(bl) {
@@ -357,6 +353,7 @@ function convertGradientToSvg( gradient ) {
             var off = Math.round(s * sr) / sr,
                 color = fixColor(colorArr[i]),
                 opac = addOpacity(colorArr[i]);
+
             sGrad += "<stop offset='" + off + "' stop-color='" + color + "'";
             if (colorArr[i].match(trans)) {
                 sGrad += " stop-opacity='" + opac + "'";
@@ -368,9 +365,12 @@ function convertGradientToSvg( gradient ) {
              */
 
             uGrad += "<stop offset='" + off + "'";
-            color = colorArr[i].match(trans) ? colorArr[i] : color;
+            // color = colorArr[i].match(trans) ? colorArr[i] : color;
             uGrad += " stop-color='" + color + "'";
+            if (colorArr[i].match(trans)) {
 
+                uGrad += " stop-opacity='" + opac + "'";
+            }
             uGrad += '></stop>\n';
         }
 
@@ -417,7 +417,7 @@ function convertGradientToSvg( gradient ) {
             en = "</linearGradient>\n";
         svg = svg.replace(s2, '').replace(s3, r) + en;
         uri = uri.replace(s2, '').replace(s3, r) + en;
-        return svg, uri;
+        return uri;
     }
 
     function calcStops(rl) {
@@ -645,20 +645,46 @@ function convertGradientToSvg( gradient ) {
 
 };
 
+
+
 function loopStylesheet ( stylesheet, prop ) {
 
     var rules = stylesheet.cssRules,
-        rulesLength = rules.length,
-        element;
+        element,
+        gradients,
+        backgroundImage,
+        separator = "";
 
     // http://jsperf.com/fastest-array-loops-in-javascript/183
-    for ( var i = 0, l = rulesLength; i !== l; i++ ) {
+    for ( var i = 0, l = rules.length; i !== l; i++ ) {
 
         element = rules[i];
 
         if ( !element.media && element.style && element.style[prop] ) {
 
-            element.style.backgroundImage = convertGradientToSvg(element.style[prop]);
+            // Reset for each element.
+            backgroundImage = "";
+            separator = "";
+
+            gradients = element.style[prop].split('linear-gradient');
+
+            for ( var j = 0, k = gradients.length; j !== k; j++ ) {
+
+                // If the array has more than one symbol.
+                if ( gradients[j].length > 1 ) {
+
+                    // If using multiple backgrounds then list them separated by commas
+                    if ( backgroundImage != "" ) {
+                        separator = ','
+                    };
+
+                    // Remove spaces at the beginning and end of the line, remove the comma at the end of the line
+                    backgroundImage += separator + convertGradientToSvg('linear-gradient'+gradients[j].trim().replace(/,$/,'')); 
+                    
+                };
+            }
+
+            element.style.backgroundImage = backgroundImage;
 
         }
 
