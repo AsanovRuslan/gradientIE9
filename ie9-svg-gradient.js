@@ -1,6 +1,12 @@
+/*
+* Converting css3 gradient to svg and use as background-image
+* For convert need property that will store the gradient
+* Asanov Ruslan //github.com/AsanovRuslan
+*/
+
 function convertGradientToSvg( gradient ) {
     
-    if (!gradient) {
+    if ( !gradient ) {
         return false;
     };
 
@@ -152,13 +158,18 @@ function convertGradientToSvg( gradient ) {
             else if (!bgs[bl].match('center')) {
                 dir = 'tobottom';
             } // AM: no angle or keywords defined; use default 'to bottom'. If 'center' is found, error will be thrown below in normalizeAngle.
+
             bgs[bl] = bgs[bl].replace(/.*?{|color-stop|repeating|linear|radial|gradient|-(moz|webkit|o|ms)-|background(-image)?\:|deg|g?rad|turn|to\s|\btop\b|right|left|bottom|center|-(?!\s+\d)|^\(,|\)$| \b/gm, '').
             // AM: If stop-values are present, bound them with '
             replace(/(\)|#(?:[\da-f]{3}){1,2}(?!(?:%|px|cm|mm|in\b|pt|pc))|(?:from|to|[^blac])\(|(?:,|\()[a-z]+)(calc\([^)]+\)|\d{0,3}\.?\d*(%|px|cm|mm|in\b|pt|pc)|0?\.\d+)/ig, "$1'$2'");
+            //AR Replace at the .n to 0.n on transparency
+            bgs[bl] = bgs[bl].replace(/[^0](\.\d+)/g,'0$1');
             // AM: Match colors and stop-values when present
             colorArr = bgs[bl].match(/(?:from\(|to\()?('.*?',)?(#([\da-f]{3}){1,2}(?!%|px|cm|mm|in\b|pt|pc)|(rgb|hsl)a?\((\d{0,3}(\.\d+)?%?,?){3}[0-1]?\.?\d*\)|[a-z]{5,}|[a-eg-z]{3,})('.*?')?/gi), col = colorArr.length, co = col;
+
             while (col--) {
                 stopArr[col] = colorArr[col].replace(/.*?'|[^']*/, "'").replace(/'(.*?)'.*?,/, "$1").replace(/'/g, ''); // AM: Separate stop-values into new array
+
                 colorArr[col] = colorArr[col].replace(/(from|to)\(|'.*?',?/g, ''); // AM: Remove stops and other junk to leave colors
                 /* AM: Test for parsable colors in gradient. Ex: Browsers should throw an error (at least FF does) if rgb() has 4 values, which above regex allows. 
                  * Test only runs in browsers supporting CSS3 colors. Older ones like IE8-, FF2-, O9.6-, and S3.0- skip it.
@@ -176,6 +187,7 @@ function convertGradientToSvg( gradient ) {
                 }
                 d = null;
             }
+
             stl = stopArr.length;
             if (!!oldWebkit) {
                 while (stl--) {
@@ -662,7 +674,7 @@ function loopStylesheet ( stylesheet, prop ) {
 
         if ( !element.media && element.style && element.style[prop] ) {
 
-            // Reset for each element.
+            //AR Reset for each element.
             backgroundImage = "";
             separator = "";
 
@@ -670,15 +682,15 @@ function loopStylesheet ( stylesheet, prop ) {
 
             for ( var j = 0, k = gradients.length; j !== k; j++ ) {
 
-                // If the array has more than one symbol.
+                //AR If the array has more than one symbol.
                 if ( gradients[j].length > 1 ) {
 
-                    // If using multiple backgrounds then list them separated by commas
+                    //AR If using multiple backgrounds then list them separated by commas
                     if ( backgroundImage != "" ) {
                         separator = ','
                     };
 
-                    // Remove spaces at the beginning and end of the line, remove the comma at the end of the line
+                    //AR Remove spaces at the beginning and end of the line, remove the comma at the end of the line
                     backgroundImage += separator + convertGradientToSvg('linear-gradient'+gradients[j].trim().replace(/,$/,'')); 
                     
                 };
@@ -697,7 +709,7 @@ function modifyCss ( prop ) {
     var property =  '-pie-background',
         stylesheet = document.styleSheets;
 
-    // http://jsperf.com/fastest-array-loops-in-javascript/183
+    //AR http://jsperf.com/fastest-array-loops-in-javascript/183
     for ( var i = 0, l = stylesheet.length; i !== l; i++ ) {
         loopStylesheet( stylesheet[i], property );
     }
